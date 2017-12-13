@@ -46,6 +46,9 @@ class ApplianceManager(object):
     def add_appliance(self, appliance):
         """Add an appliance to glance
         """
+        LOG.debug("Adding appliance with the following "
+                  "attributes: %s" % appliance)
+
         project_name = self.mapping.get_project_from_vo(appliance.vo)
         if not project_name:
             LOG.error("Cannot get a project name mapped to the "
