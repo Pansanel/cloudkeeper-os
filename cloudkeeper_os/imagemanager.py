@@ -37,6 +37,7 @@ APPLIANCE_INT_VALUES = constants.APPLIANCE_INT_VALUES
 IMAGE_STATUS_TAG = constants.IMAGE_STATUS_TAG
 ATTRIBUTE_KEYS = constants.ATTRIBUTE_KEYS
 
+
 class ApplianceManager(object):
     """A class for managing Appliance
     """
