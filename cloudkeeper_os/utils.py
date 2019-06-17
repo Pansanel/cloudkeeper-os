@@ -17,7 +17,6 @@
 """A set of utils for Cloudkeeper-OS
 """
 
-import json
 import math
 import shutil
 import uuid
@@ -92,17 +91,18 @@ def extract_appliance_properties(appliance):
     """
     properties = {}
     for (descriptor, value) in appliance.ListFields():
-        if descriptor.name == 'identifier':
-            key = IMAGE_ID_TAG
-        elif descriptor.name == 'image_list_identifier':
-            key = IMAGE_LIST_ID_TAG
+        if descriptor.name == 'attributes':
+            data = dict(value)
+            for (key, entry) in data:
+                properties[key] = entry
         else:
-            if descriptor.name == 'attributes':
-                data = dict(value)
-                value = json.dumps(data)
-                LOG.debug("attribute value: %s" % value)
-            key = 'APPLIANCE_' + str.upper(descriptor.name)
-        properties[key] = str(value)
+            if descriptor.name == 'identifier':
+                key = IMAGE_ID_TAG
+            elif descriptor.name == 'image_list_identifier':
+                key = IMAGE_LIST_ID_TAG
+            else:
+                key = 'APPLIANCE_' + str.upper(descriptor.name)
+            properties[key] = str(value)
     # Add property for cloud-info-provider compatibility
     properties['vmcatcher_event_ad_mpuri'] = appliance.mpuri
     return properties

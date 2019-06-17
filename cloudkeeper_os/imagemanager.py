@@ -35,7 +35,7 @@ IMAGE_ID_TAG = constants.IMAGE_ID_TAG
 IMAGE_LIST_ID_TAG = constants.IMAGE_LIST_ID_TAG
 APPLIANCE_INT_VALUES = constants.APPLIANCE_INT_VALUES
 IMAGE_STATUS_TAG = constants.IMAGE_STATUS_TAG
-
+ATTRIBUTE_KEYS = constants.ATTRIBUTE_KEYS
 
 class ApplianceManager(object):
     """A class for managing Appliance
@@ -246,6 +246,8 @@ class ImageListManager(object):
         appliance_list = []
         for image in self.appliances[image_list_identifier]:
             properties = {}
+
+            # Initialize most keys and values of the properties dict
             for field in cloudkeeper_pb2.Appliance.DESCRIPTOR.fields_by_name:
                 if field == 'identifier':
                     key = IMAGE_ID_TAG
@@ -257,9 +259,21 @@ class ImageListManager(object):
                     if field in APPLIANCE_INT_VALUES:
                         properties[field] = int(image[key])
                     elif field == 'attributes':
-                        properties[field] = json.loads(image[key])
+                        # Attributes is dictionnary and its content has been
+                        # directly added to the properties when the
+                        # appliance has been loaded. It will be
+                        # initialized correctly is the next loop
+                        continue
                     else:
                         properties[field] = image[key]
+
+            # Initialize correctly the attributes key
+            attributes = {}
+            for key in image:
+                if len(key) > 3 and key[:3] in ATTRIBUTE_KEYS:
+                    attributes[key] = image[key]
+            properties['attributes'] = json.loads(attributes)
+
             LOG.debug("The image '%s' is added to the appliance list having "
                       "the following "
                       "identifier %s" % (image.id, image_list_identifier))
