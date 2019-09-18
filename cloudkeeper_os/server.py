@@ -24,8 +24,8 @@ import time
 
 from concurrent import futures
 import grpc
-from oslo_log import log
 from oslo_config import cfg
+from oslo_log import log
 
 from cloudkeeper_os import cloudkeeper_pb2_grpc
 from cloudkeeper_os import cloudkeeper_pb2
@@ -174,7 +174,11 @@ def serve():
         CommunicatorServicer(), server)
     server.add_insecure_port('[::]:' + str(grpc_port))
     LOG.info('Starting Cloudkeeper-OS on port: %i' % grpc_port)
-    LOG.info('Cloudkeeper-OS is using the following glance endpoint: %s' % endpoint)
+    if endpoint is not None:
+        LOG.info(
+            'Cloudkeeper-OS is using the following glance '
+            'endpoint: %s' % endpoint
+        )
 
     server.start()
     try:

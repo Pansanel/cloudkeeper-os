@@ -29,6 +29,7 @@ LOG = log.getLogger(__name__)
 
 CFG_GROUP = "keystone_authtoken"
 
+
 def get_session(project_name, domain_name):
     """Get an auth session.
     """
@@ -37,6 +38,7 @@ def get_session(project_name, domain_name):
     auth_params['project_domain_name'] = domain_name
     auth = v3.Password(**auth_params)
     return session.Session(auth=auth, verify=False)
+
 
 def get_glance_client(project_name, domain_name):
     """Get a glance client
@@ -47,7 +49,9 @@ def get_glance_client(project_name, domain_name):
         sess = get_session(project_name=project_name, domain_name=domain_name)
         if endpoint:
             LOG.debug("Glance client is using the endpoint: %s" % endpoint)
-            glance_client = glanceclient.Client(session=sess, endpoint=endpoint)
+            glance_client = glanceclient.Client(
+                session=sess, endpoint=endpoint
+            )
         else:
             glance_client = glanceclient.Client(session=sess)
     except webob.exc.HTTPForbidden as err:

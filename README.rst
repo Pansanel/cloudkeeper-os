@@ -3,7 +3,7 @@ Cloudkeeper-OS
 ==============
 
 Cloudkeeper-OS is a project that provides an `OpenStack Glance <https://docs.openstack.org/glance>`_
-backend for `Cloudkeeper <https://github.com/the-cloudkeeper-project/cloudkeeper>`_.
+backend for `Cloudkeeper <https://github.com/FranceGrilles/cloudkeeper>`_.
 It interacts with the OpenStack Image Service to manage images representing
 `EGI AppDB <https://appdb.egi.eu/browse/cloud>`_ Appliances. Cloudkeeper-OS
 runs as a server listening for `gRPC <https://grpc.io/>`_ communication from
@@ -31,13 +31,13 @@ The **cloudkeeper-os** program has several dependencies listed in the
 ``requirements.txt`` file.
 
 *Cloudkeeper-OS* can be downloaded from the following
-`GitHub repository <https://github.com/the-cloudkeeper-project/cloudkeeper-os>`_::
+`GitHub repository <https://github.com/FranceGrilles/cloudkeeper-os>`_::
 
-  $ git clone https://github.com/the-cloudkeeper-project/cloudkeeper-os.git
+  $ git clone https://github.com/FranceGrilles/cloudkeeper-os.git
 
 In the created directory, run the ``setup.py`` script::
 
-  $ git clone https://github.com/the-cloudkeeper-project/cloudkeeper-os.git
+  $ git clone https://github.com/FranceGrilles/cloudkeeper-os.git
   $ cd cloudkeeper-os
   $ python setup.py install
   $ mkdir /etc/cloudkeeper-os
@@ -92,15 +92,17 @@ For example::
   auth_url = http://controller:5000/v3
 
 
-In addition, you have to edit the ``mapping.json`` JSON file to map correctly the
-VO and the OpenStack project's name. Note that you can use the same JSON file
-as for the `keystone-voms <https://ifca.github.io/keystone-voms/>`_ component,
-by setting the *mapping_file* parameter with the path to ``mapping.json`` file
-in the ``cloudkeeper-os.conf`` file (this file is called ``voms.json`` in the
-keystone-voms project).
+In addition, you have to edit the ``mapping.json`` JSON file to map correctly
+the VO and the OpenStack project's name . The path to this file is defined
+with the *mapping_file* parameter in the ``cloudkeeper-os.conf`` file.
 
 Note that the user defined by the *username* parameter should have the right
 to manage the images for all the project defined in the ``mapping.json`` file.
 
 To take into account the modifications, do not forget to restart the
 *cloudkeeper-os* service.
+
+If you want to use a specific glance endpoint (i.e. not the endpoint returned
+by the catalog), you can define it with the glance_url parameter::
+
+  glance_url = http://controller:9292

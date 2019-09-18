@@ -46,7 +46,7 @@ class Mapping(object):
                         "The project for the %s VO is not defined " +
                         "in the %s mapping file" % (vo_name, CONF.mapping_file)
                     )
-                    continue 
+                    continue
                 self.vo_mapping[vo_name] = project_name
                 self.project_mapping[project_name] = vo_name
                 if 'domain' in details:
