@@ -168,11 +168,13 @@ def serve():
         LOG.exception(rtex)
         sys.exit(1)
     grpc_port = cfg.CONF.grpc_port
+    endpoint = cfg.CONF.glance_url
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     cloudkeeper_pb2_grpc.add_CommunicatorServicer_to_server(
         CommunicatorServicer(), server)
     server.add_insecure_port('[::]:' + str(grpc_port))
     LOG.info('Starting Cloudkeeper-OS on port: %i' % grpc_port)
+    LOG.info('Cloudkeeper-OS is using the following glance endpoint: %s' % endpoint)
 
     server.start()
     try:

@@ -30,14 +30,29 @@ LOG = log.getLogger(__name__)
 class Mapping(object):
     """An object for managing the VO / project mapping
     """
-    def __init__(self):
+    def __init__(self, default_domain_name='Default'):
         self.vo_mapping = {}
         self.project_mapping = {}
+        self.domain_mapping = {}
         try:
             mapping = json.loads(open(CONF.mapping_file).read())
             for (vo_name, details) in mapping.items():
-                self.vo_mapping[vo_name] = details['project']
-                self.project_mapping[details['project']] = vo_name
+                if 'project' in details:
+                    project_name = details['project']
+                elif 'tenant' in details:
+                    project_name = details['tenant']
+                else:
+                    LOG.error(
+                        "The project for the %s VO is not defined " +
+                        "in the %s mapping file" % (vo_name, CONF.mapping_file)
+                    )
+                    continue 
+                self.vo_mapping[vo_name] = project_name
+                self.project_mapping[project_name] = vo_name
+                if 'domain' in details:
+                    self.domain_mapping[project_name] = details['domain']
+                else:
+                    self.domain_mapping[project_name] = default_domain_name
         except IOError:
             LOG.error("Failed to open mapping file.")
 
@@ -49,6 +64,12 @@ class Mapping(object):
         else:
             LOG.error("No such VO '%s' in the mapping file." % (vo_name))
             return None
+
+    def get_domain_from_project(self, project_name):
+        """Return the domain associated to the project
+        """
+        if project_name in self.domain_mapping:
+            return self.domain_mapping[project_name]
 
     def get_vo_from_project(self, project):
         """Return the VO associated to the project

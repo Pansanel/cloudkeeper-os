@@ -37,6 +37,9 @@ DEFAULT_OPTS = [
                default='private',
                choices=['public', 'private', 'shared', 'community'],
                help='Visibility of images uploaded to OpenStack'),
+    cfg.StrOpt('glance_url',
+               default=None,
+               help='Glance endpoint')
 ]
 
 cfg.CONF.register_opts(DEFAULT_OPTS)

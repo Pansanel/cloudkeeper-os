@@ -35,7 +35,6 @@ IMAGE_ID_TAG = constants.IMAGE_ID_TAG
 IMAGE_LIST_ID_TAG = constants.IMAGE_LIST_ID_TAG
 APPLIANCE_INT_VALUES = constants.APPLIANCE_INT_VALUES
 IMAGE_STATUS_TAG = constants.IMAGE_STATUS_TAG
-ATTRIBUTE_KEYS = constants.ATTRIBUTE_KEYS
 
 
 class ApplianceManager(object):
@@ -43,6 +42,7 @@ class ApplianceManager(object):
     """
     def __init__(self):
         self.mapping = mapping.Mapping()
+
 
     def add_appliance(self, appliance):
         """Add an appliance to glance
@@ -53,7 +53,8 @@ class ApplianceManager(object):
                       "vo '%s'" % appliance.vo)
             return None
 
-        glance = openstack_client.get_glance_client(project_name)
+        domain_name = self.mapping.get_domain_from_project(project_name)
+        glance = openstack_client.get_glance_client(project_name, domain_name)
         if not glance:
             LOG.error("Cannot get a glance client for the "
                       "project '%s'" % project_name)
@@ -92,19 +93,18 @@ class ApplianceManager(object):
 
         properties[IMAGE_STATUS_TAG] = 'ACTIVE'
 
-        LOG.debug(
-            "Creating image '%s' (format: '%s', "
-            "properties %s)" % (appliance.title, str.lower(image_format),
-                                properties)
-        )
+        LOG.debug("Creating image '%s' (format: '%s', "
+                  "properties %s)" % (appliance.title,
+                                      str.lower(image_format),
+                                      properties)
+                 )
 
-        glance_image = glance.images.create(
-            name=appliance.title,
-            disk_format=str.lower(image_format),
-            container_format="bare",
-            visibility=CONF.image_visibility,
-            min_ram=min_ram
-        )
+        glance_image = glance.images.create(name=appliance.title,
+                                            disk_format=str.lower(image_format),
+                                            container_format="bare",
+                                            visibility=CONF.image_visibility,
+                                            min_ram=min_ram
+                                           )
         glance.images.upload(glance_image.id, image_data)
         glance.images.update(glance_image.id, **properties)
 
@@ -122,8 +122,7 @@ class ApplianceManager(object):
         LOG.info("Updating appliance '%s'" % appliance.identifier)
         image_list = self.mark_appliance_for_removal(appliance)
         if not image_list:
-            LOG.error("Could not mark appliance for removal. "
-                      "Appliance will not be updated")
+            LOG.error("Could not mark appliance for removal. Appliance will not be updated")
             return None
         LOG.debug("Old version of the '%s' appliance has been marked for "
                   "removal" % appliance.identifier)
@@ -131,6 +130,7 @@ class ApplianceManager(object):
         image_id = self.add_appliance(appliance)
         LOG.debug("The glance image '%s' has been created" % image_id)
         return image_id
+
 
     def mark_appliance_for_removal(self, appliance):
         """Mark an appliance in glance for removal
@@ -142,7 +142,8 @@ class ApplianceManager(object):
                       "VO '%s'" % appliance.vo)
             return None
 
-        glance = openstack_client.get_glance_client(project_name)
+        domain_name = self.mapping.get_domain_from_project(project_name)
+        glance = openstack_client.get_glance_client(project_name, domain_name)
         if not glance:
             LOG.error("Cannot get a glance client for the "
                       "project '%s'" % project_name)
@@ -167,7 +168,8 @@ class ApplianceManager(object):
         """
         LOG.info("Cleaning up appliances")
         for project_name in self.mapping.get_projects():
-            glance = openstack_client.get_glance_client(project_name)
+            domain_name = self.mapping.get_domain_from_project(project_name)
+            glance = openstack_client.get_glance_client(project_name, domain_name)
             if not glance:
                 LOG.error("Not authorized to manage images from the "
                           "project: %s" % project_name)
@@ -183,17 +185,14 @@ class ApplianceManager(object):
 
             for image in image_list:
                 if IMAGE_LIST_ID_TAG in image:
-                    if (IMAGE_STATUS_TAG in image and
-                            image[IMAGE_STATUS_TAG] == 'EOL'):
+                    if IMAGE_STATUS_TAG in image and image[IMAGE_STATUS_TAG] == 'EOL':
                         try:
                             LOG.debug("Deleting image '%s'" % image['id'])
                             glance.images.delete(image['id'])
-                            LOG.debug("Image '%s' successfully "
-                                      "deleted" % image['id'])
+                            LOG.debug("Image '%s' successfully deleted" % image['id'])
                         except Exception as err:
                             LOG.error("Cannot delete image '%s'" % image['id'])
                             LOG.error(err)
-
 
 class ImageListManager(object):
     """A class for managing image lists
@@ -210,9 +209,9 @@ class ImageListManager(object):
         appliances = {}
 
         for project_name in self.mapping.get_projects():
-            LOG.debug("Retrieving image list identifiers for "
-                      "project %s" % (project_name))
-            glance = openstack_client.get_glance_client(project_name)
+            LOG.debug("Retrieving image list identifiers for project %s" % (project_name))
+            domain_name = self.mapping.get_domain_from_project(project_name)
+            glance = openstack_client.get_glance_client(project_name, domain_name)
             if not glance:
                 LOG.error("Not authorized to manage images from the "
                           "project: %s" % project_name)
@@ -227,15 +226,11 @@ class ImageListManager(object):
                 continue
             for image in image_list:
                 if IMAGE_LIST_ID_TAG in image:
-                    if (IMAGE_STATUS_TAG not in image or
-                            image[IMAGE_STATUS_TAG] != 'EOL'):
+                    if (IMAGE_STATUS_TAG not in image) or (image[IMAGE_STATUS_TAG] != 'EOL'):
                         if image[IMAGE_LIST_ID_TAG] not in appliances:
                             appliances[image[IMAGE_LIST_ID_TAG]] = []
-                        LOG.debug(
-                            "Appending image with id %s to image list with "
-                            "id %s" % (image[IMAGE_ID_TAG],
-                                       image[IMAGE_LIST_ID_TAG])
-                        )
+                        LOG.debug("Appending image with id %s to image list with "
+                                  "id %s" % (image[IMAGE_ID_TAG], image[IMAGE_LIST_ID_TAG]))
                         appliances[image[IMAGE_LIST_ID_TAG]].append(image)
 
         self.appliances = appliances
@@ -247,8 +242,6 @@ class ImageListManager(object):
         appliance_list = []
         for image in self.appliances[image_list_identifier]:
             properties = {}
-
-            # Initialize most keys and values of the properties dict
             for field in cloudkeeper_pb2.Appliance.DESCRIPTOR.fields_by_name:
                 if field == 'identifier':
                     key = IMAGE_ID_TAG
@@ -258,23 +251,11 @@ class ImageListManager(object):
                     key = 'APPLIANCE_' + str.upper(field)
                 if key in image:
                     if field in APPLIANCE_INT_VALUES:
-                        properties[field] = int(image[key])
+                        properties[field] = long(image[key])
                     elif field == 'attributes':
-                        # Attributes is dictionnary and its content has been
-                        # directly added to the properties when the
-                        # appliance has been loaded. It will be
-                        # initialized correctly is the next loop
-                        continue
+                        properties[field] = json.loads(image[key])
                     else:
                         properties[field] = image[key]
-
-            # Initialize correctly the attributes key
-            attributes = {}
-            for key in image:
-                if len(key) > 3 and key[:3] in ATTRIBUTE_KEYS:
-                    attributes[key] = image[key]
-            properties['attributes'] = json.loads(attributes)
-
             LOG.debug("The image '%s' is added to the appliance list having "
                       "the following "
                       "identifier %s" % (image.id, image_list_identifier))
@@ -299,7 +280,8 @@ class ImageListManager(object):
                       "VO '%s'" % vo_name)
             return None
 
-        glance = openstack_client.get_glance_client(project_name)
+        domain_name = self.mapping.get_domain_from_project(project_name)
+        glance = openstack_client.get_glance_client(project_name, domain_name)
         if not glance:
             LOG.error("Cannot get a glance client for the "
                       "project '%s'" % project_name)
