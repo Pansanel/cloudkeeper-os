@@ -19,6 +19,9 @@
 # Allowed values: public, private, shared, community
 #image_visibility = private
 
+# Glance endpoint to be used by the Cloudkeeper-OS server
+# glance_url =
+
 #
 # From oslo.log
 #
