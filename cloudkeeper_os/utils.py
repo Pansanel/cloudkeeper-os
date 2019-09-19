@@ -93,8 +93,8 @@ def extract_appliance_properties(appliance):
     for (descriptor, value) in appliance.ListFields():
         if descriptor.name == 'attributes':
             data = dict(value)
-            for (key, entry) in data:
-                properties[key] = entry
+            for key in data:
+                properties[key] = data[key]
         else:
             if descriptor.name == 'identifier':
                 key = IMAGE_ID_TAG
