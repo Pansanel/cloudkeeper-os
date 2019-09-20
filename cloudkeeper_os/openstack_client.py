@@ -44,13 +44,14 @@ def get_glance_client(project_name, domain_name):
     """Get a glance client
     """
     LOG.debug("Get a glance client for the project: '%s'" % project_name)
-    endpoint = CONF.glance_url
+    endpoint_type = CONF.endpoint_type
     try:
         sess = get_session(project_name=project_name, domain_name=domain_name)
-        if endpoint:
-            LOG.debug("Glance client is using the endpoint: %s" % endpoint)
+        if endpoint_type:
+            LOG.debug("Glance client is accessing Glance thourgh the "
+                      "following endpoint type: %s" % endpoint_type)
             glance_client = glanceclient.Client(
-                session=sess, endpoint=endpoint
+                session=sess, interface=endpoint_type
             )
         else:
             glance_client = glanceclient.Client(session=sess)

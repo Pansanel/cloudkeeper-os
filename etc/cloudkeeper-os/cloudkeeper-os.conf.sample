@@ -23,8 +23,12 @@
 # community - <No description provided>
 #image_visibility = private
 
-# Glance endpoint (string value)
-#glance_url = <None>
+# This value indicates the endpoint type to use to connect the Glance endpoint.
+# (string value)
+# Possible values:
+# internal - <No description provided>
+# public - <No description provided>
+#endpoint_type = <None>
 
 #
 # From oslo.log
