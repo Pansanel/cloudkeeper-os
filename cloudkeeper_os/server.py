@@ -23,9 +23,9 @@ import sys
 import time
 
 from concurrent import futures
-import grpc
 from oslo_config import cfg
 from oslo_log import log
+import grpc
 
 from cloudkeeper_os import cloudkeeper_pb2_grpc
 from cloudkeeper_os import cloudkeeper_pb2
@@ -168,16 +168,16 @@ def serve():
         LOG.exception(rtex)
         sys.exit(1)
     grpc_port = cfg.CONF.grpc_port
-    endpoint = cfg.CONF.glance_url
+    endpoint_type = cfg.CONF.endpoint_type
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     cloudkeeper_pb2_grpc.add_CommunicatorServicer_to_server(
         CommunicatorServicer(), server)
     server.add_insecure_port('[::]:' + str(grpc_port))
     LOG.info('Starting Cloudkeeper-OS on port: %i' % grpc_port)
-    if endpoint is not None:
+    if endpoint_type is not None:
         LOG.info(
-            'Cloudkeeper-OS is using the following glance '
-            'endpoint: %s' % endpoint
+            'Cloudkeeper-OS is using the following endpoint '
+            'type to connect Glance: %s' % endpoint_type
         )
 
     server.start()
