@@ -48,7 +48,7 @@ def get_glance_client(project_name, domain_name):
     try:
         sess = get_session(project_name=project_name, domain_name=domain_name)
         if endpoint_type:
-            LOG.debug("Glance client is accessing Glance thourgh the "
+            LOG.debug("Glance client is accessing Glance through the "
                       "following endpoint type: %s" % endpoint_type)
             glance_client = glanceclient.Client(
                 session=sess, interface=endpoint_type
