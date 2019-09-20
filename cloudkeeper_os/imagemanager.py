@@ -263,7 +263,13 @@ class ImageListManager(object):
         """
         self.update_image_list_identifiers()
         appliance_list = []
+        LOG.debug(
+            "Create appliance list for the image list "
+            "%s" % image_list_identifier
+        )
         for image in self.appliances[image_list_identifier]:
+            LOG.debug("Building the property list for appliance %s (image: "
+                      "%s)" % (image[IMAGE_ID_TAG], image.id))
             properties = {}
             for field in cloudkeeper_pb2.Appliance.DESCRIPTOR.fields_by_name:
                 if field == 'identifier':
@@ -279,12 +285,16 @@ class ImageListManager(object):
                         properties[field] = json.loads(image[key])
                     else:
                         properties[field] = image[key]
-            LOG.debug("The image '%s' is added to the appliance list having "
-                      "the following "
-                      "identifier %s" % (image.id, image_list_identifier))
+            if 'attributes' not in properties:
+                attributes = {}
+                for key in image:
+                    if key[:3] in constants.ATTRIBUTE_KEYS:
+                        attributes[key] = image[key]
+                properties['attributes'] = attributes
             appliance_list.append(
                 cloudkeeper_pb2.Appliance(**properties)
             )
+            LOG.debug('The property list contains: %s' % (properties))
         return appliance_list
 
     def remove_image_list(self, image_list_identifier):
