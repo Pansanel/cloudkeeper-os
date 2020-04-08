@@ -36,8 +36,7 @@ IMAGE_LIST_ID_TAG = constants.IMAGE_LIST_ID_TAG
 
 
 def retrieve_image(appliance):
-    """Retrieve an image from Cloudkeeper NGINX
-    """
+    """Retrieve an image from Cloudkeeper NGINX."""
     # TODO manage SSL case
     filename = CONF.tempdir + '/' + str(uuid.uuid4())
     uri = appliance.image.location
@@ -60,8 +59,17 @@ def retrieve_image(appliance):
     return filename
 
 
+def find_image(glance_client, image_id):
+    """Search for a glance image given an glance image id appliance."""
+    # Check that identifier and image_list_identifier are not too small
+    image = glance_client.images.get(image_id)
+    return image
+
+
 def find_images(glance_client, identifier, image_list_identifier):
-    """Search for glance images given a appliance and image list identifiers
+    """Search for glance images.
+
+    The search is filtered with the appliance and the image list identifiers.
     """
     # Check that identifier and image_list_identifier are not too small
     if len(identifier) <= 3:
@@ -87,8 +95,7 @@ def find_images(glance_client, identifier, image_list_identifier):
 
 
 def extract_appliance_properties(appliance):
-    """Extract properties from an appliance
-    """
+    """Extract properties from an appliance."""
     properties = {}
     for (descriptor, value) in appliance.ListFields():
         if descriptor.name == 'attributes':
@@ -109,6 +116,5 @@ def extract_appliance_properties(appliance):
 
 
 def convert_ram(ram_value):
-    """Convert ram in bytes to the nearest upper integer in megabytes
-    """
+    """Convert ram in bytes to the nearest upper integer in megabytes."""
     return int(math.ceil(ram_value/1048576))

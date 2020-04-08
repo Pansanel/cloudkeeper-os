@@ -38,14 +38,14 @@ IMAGE_STATUS_TAG = constants.IMAGE_STATUS_TAG
 
 
 class ApplianceManager(object):
-    """A class for managing Appliance
-    """
+    """A class for managing Appliance."""
+
     def __init__(self):
+        """Initialize the class."""
         self.mapping = mapping.Mapping()
 
     def add_appliance(self, appliance):
-        """Add an appliance to glance
-        """
+        """Add an appliance to glance."""
         project_name = self.mapping.get_project_from_vo(appliance.vo)
         if not project_name:
             LOG.error("Cannot get a project name mapped to the "
@@ -118,11 +118,10 @@ class ApplianceManager(object):
         return glance_image.id
 
     def update_appliance(self, appliance):
-        """Update an appliance stored in glance
-        """
+        """Update an appliance stored in glance."""
         LOG.info("Updating appliance '%s'" % appliance.identifier)
-        image_list = self.mark_appliance_for_removal(appliance)
-        if not image_list:
+        marked_images = self.mark_appliance_for_removal(appliance)
+        if not marked_images:
             LOG.error(
                 "Could not mark appliance for removal. Appliance will "
                 "not be updated"
@@ -132,12 +131,47 @@ class ApplianceManager(object):
                   "removal" % appliance.identifier)
         LOG.debug("Creating new release of the appliance")
         image_id = self.add_appliance(appliance)
+        if not image_id:
+            LOG.error("Could not update the image. Reverting the state of" +
+                      "images marked for removal")
+            for old_image_id in marked_images:
+                self.mark_appliance_as_active(appliance, old_image_id)
         LOG.debug("The glance image '%s' has been created" % image_id)
         return image_id
 
+    def mark_appliance_as_active(self, appliance, image_id):
+        """Mark an appliance in glance as active."""
+        LOG.info("Marking image '%s' as active" % image_id)
+        project_name = self.mapping.get_project_from_vo(appliance.vo)
+        if not project_name:
+            LOG.error("Cannot get a project name mapped to the "
+                      "VO '%s'" % appliance.vo)
+            return None
+
+        domain_name = self.mapping.get_domain_from_project(project_name)
+        glance = openstack_client.get_glance_client(project_name, domain_name)
+        if not glance:
+            LOG.error("Cannot get a glance client for the "
+                      "project '%s'" % project_name)
+            return None
+
+        glance_image = utils.find_image(glance, image_id)
+        if not glance_image:
+            LOG.error("Cannot mark image as active: image not found")
+            return None
+
+        properties = {}
+        properties[IMAGE_STATUS_TAG] = 'ACTIVE'
+        LOG.debug("Marking image as active: '%s'" % glance_image.id)
+        glance.images.update(
+            glance_image.id, visibility='private', **properties
+        )
+
+        return True
+
     def mark_appliance_for_removal(self, appliance):
-        """Mark an appliance in glance for removal
-        """
+        """Mark an appliance in glance for removal."""
+        marked_images = []
         LOG.info("Marking appliance '%s' for removal" % appliance.identifier)
         project_name = self.mapping.get_project_from_vo(appliance.vo)
         if not project_name:
@@ -162,13 +196,13 @@ class ApplianceManager(object):
         properties[IMAGE_STATUS_TAG] = 'EOL'
         for image in glance_images:
             LOG.debug("Marking image for removal: '%s'" % image.id)
+            marked_images.append(image.id)
             glance.images.update(image.id, visibility='private', **properties)
 
-        return True
+        return marked_images
 
     def cleanup_appliances(self):
-        """Try to remove all appliances marked for removal
-        """
+        """Try to remove all appliances marked for removal."""
         LOG.info("Cleaning up appliances")
         for project_name in self.mapping.get_projects():
             domain_name = self.mapping.get_domain_from_project(project_name)
@@ -207,17 +241,15 @@ class ApplianceManager(object):
 
 
 class ImageListManager(object):
-    """A class for managing image lists
-    """
+    """A class for managing image lists."""
+
     def __init__(self):
-        """Initialize the ImageListManager
-        """
+        """Initialize the ImageListManager."""
         self.appliances = {}
         self.mapping = mapping.Mapping()
 
     def update_image_list_identifiers(self):
-        """Update the identifier list
-        """
+        """Update the identifier list."""
         appliances = {}
 
         for project_name in self.mapping.get_projects():
@@ -259,8 +291,7 @@ class ImageListManager(object):
         self.appliances = appliances
 
     def get_appliances(self, image_list_identifier):
-        """Return all appliances with a given image_list_identifier
-        """
+        """Return all appliances with a given image_list_identifier."""
         self.update_image_list_identifiers()
         appliance_list = []
         LOG.debug(
@@ -298,8 +329,7 @@ class ImageListManager(object):
         return appliance_list
 
     def remove_image_list(self, image_list_identifier):
-        """Remove all images linked to an image_list_identifier
-        """
+        """Remove all images linked to an image_list_identifier."""
         self.update_image_list_identifiers()
         if image_list_identifier not in self.appliances:
             # raise NotIdentifierFound exception
@@ -329,8 +359,7 @@ class ImageListManager(object):
         return image_list_identifier
 
     def get_image_list_identifiers(self):
-        """Return a list of identifiers
-        """
+        """Return a list of identifiers."""
         self.update_image_list_identifiers()
         image_list_identifiers = []
         for identifier in self.appliances:
